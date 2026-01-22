@@ -270,7 +270,7 @@ class NewSaleWindow(ctk.CTkToplevel):
         
         # Ülke seçimi dropdown (sağ taraf) - ttk.Combobox scroll destekler
         self.selected_country_code = "TR"
-        ulke_isimleri = [ulke[1] for ulke in ULKELER]
+        self.ulke_isimleri = [ulke[1] for ulke in ULKELER]
         
         # ttk stil ayarları - daha büyük font ve koyu yazı
         style = ttk.Style()
@@ -298,16 +298,16 @@ class NewSaleWindow(ctk.CTkToplevel):
         self.ulke_dropdown = ttk.Combobox(
             dropdown_frame,
             textvariable=self.ulke_var,
-            values=ulke_isimleri,
+            values=self.ulke_isimleri,
             font=('Segoe UI', 14),
             width=16,
             style='Country.TCombobox'
         )
         self.ulke_dropdown.pack(padx=2, pady=2)
-        # Önce değeri ayarla, sonra readonly yap
         self.ulke_dropdown.set("Türkiye")
-        self.ulke_dropdown.configure(state="readonly")
+        # Harf yazınca filtreleme için event binding
         self.ulke_dropdown.bind("<<ComboboxSelected>>", self.on_country_changed_ttk)
+        self.ulke_dropdown.bind("<KeyRelease>", self.on_ulke_key_press)
         
         # Toplam Satış Tutarı (Ciro)
         self.create_form_field(main_frame, "💵 Toplam Satış Tutarı(Ciro) (₺)", "toplam_satis", "0.00")
@@ -479,6 +479,34 @@ class NewSaleWindow(ctk.CTkToplevel):
             if name == selected_name:
                 self.selected_country_code = code
                 break
+    
+    def on_ulke_key_press(self, event):
+        """Ülke dropdown'unda harf yazınca filtreleme yap"""
+        # Özel tuşları yoksay
+        if event.keysym in ('Return', 'Tab', 'Escape', 'Up', 'Down', 'Left', 'Right', 'BackSpace', 'Delete'):
+            if event.keysym == 'BackSpace' or event.keysym == 'Delete':
+                # Silme tuşlarında tüm listeyi göster
+                self.ulke_dropdown['values'] = self.ulke_isimleri
+            return
+        
+        # Yazılan metni al
+        typed = self.ulke_var.get().strip().lower()
+        
+        if not typed:
+            # Boşsa tüm listeyi göster
+            self.ulke_dropdown['values'] = self.ulke_isimleri
+            return
+        
+        # Filtrelenmiş ülkeleri bul (yazılan harfle başlayanlar önce, içerenler sonra)
+        baslayanlar = [u for u in self.ulke_isimleri if u.lower().startswith(typed)]
+        icerenler = [u for u in self.ulke_isimleri if typed in u.lower() and u not in baslayanlar]
+        
+        filtered = baslayanlar + icerenler
+        
+        if filtered:
+            self.ulke_dropdown['values'] = filtered
+            # Dropdown'u aç
+            self.ulke_dropdown.event_generate('<Down>')
     
     def load_firma_cache(self):
         """Firmaları arka planda cache'e yükle (thread ile)"""
