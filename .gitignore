@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+*.manifest
+*.spec
+
+# Virtual Environment
+venv/
+.venv/
+env/
+.env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Database
+*.db
+*.sqlite
+
+# PyInstaller
+*.exe
+!AntkoliKarHesaplama.exe
+
+# Build artifacts
+AntkoliKarHesaplama.exe_extracted/
+build_log.txt
+
+# Web dependencies
+web-dashboard/**/node_modules/
+web-dashboard/**/dist/
+
+# Backup folders
+backup_*/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
