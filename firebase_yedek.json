@@ -1,0 +1,22 @@
+﻿{
+    "app_version":  {
+                        "download_url":  "https://drive.google.com/file/d/1G2I4bu8FCGW1rDi1Vf5yAQP6uYGU9-h0/view?usp=sharing",
+                        "notes":  "Tarayici fallback eklendi",
+                        "version":  "1.2.4"
+                    },
+    "ayarlar":  {
+                    "aylik_kira":  104166.0,
+                    "baglama_ipi":  4245.0,
+                    "boya":  33029.0,
+                    "elektrik":  22388.0,
+                    "gecici_vergi":  7376.0,
+                    "muhasebe":  5000.0,
+                    "muhtasar":  11026.0,
+                    "muhtelif":  94090.0,
+                    "personel":  240454.0,
+                    "sgk":  80346.0,
+                    "tutkal":  2411.0,
+                    "yakit":  36512.0,
+                    "yemek":  13311.0
+                }
+}
