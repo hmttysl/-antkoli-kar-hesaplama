@@ -21,8 +21,11 @@ from database import (
     init_db, get_aylik_kira, set_aylik_kira, satis_ekle,
     tum_satislari_getir, satis_sil, istatistikleri_getir, FIREBASE_DATABASE_URL,
     get_aylik_giderler, set_aylik_giderler, get_toplam_aylik_gider, AYLIK_GIDERLER,
-    tum_firmalari_getir, firma_ara, firma_istatistikleri_getir
+    tum_firmalari_getir, firma_ara, firma_istatistikleri_getir,
+    tum_verileri_yedekle, verileri_geri_yukle
 )
+import json
+from tkinter import filedialog
 from updater import auto_check_updates, show_update_dialog, CURRENT_VERSION
 
 
@@ -1950,6 +1953,19 @@ class AntkolitApp(ctk.CTk):
         )
         settings_btn.pack(side="right", padx=(10, 0))
         
+        # Yedekleme butonu
+        backup_btn = ctk.CTkButton(
+            top_buttons, text="💾",
+            font=ctk.CTkFont(size=20),
+            fg_color="#f59e0b",
+            hover_color="#fbbf24",
+            width=45,
+            height=40,
+            corner_radius=10,
+            command=self.open_backup_menu
+        )
+        backup_btn.pack(side="right", padx=(0, 8))
+        
         # Firma Listesi butonu (turkuaz)
         firma_btn = ctk.CTkButton(
             top_buttons, text="🏢",
@@ -2151,6 +2167,112 @@ class AntkolitApp(ctk.CTk):
         """Verileri otomatik yeniler (90 saniyede bir)"""
         self.update_stats()
         self.after(90000, self.auto_refresh)  # 90 saniye
+    
+    def open_backup_menu(self):
+        """Yedekleme menüsünü aç"""
+        menu = ctk.CTkToplevel(self)
+        menu.title("💾 Yedekleme")
+        menu.geometry("350x200")
+        menu.configure(fg_color=COLORS['bg_dark'])
+        menu.transient(self)
+        menu.grab_set()
+        
+        # Ortala
+        menu.update_idletasks()
+        x = (menu.winfo_screenwidth() // 2) - (175)
+        y = (menu.winfo_screenheight() // 2) - (100)
+        menu.geometry(f'350x200+{x}+{y}')
+        
+        title = ctk.CTkLabel(
+            menu, text="💾 Yedekleme & Geri Yükleme",
+            font=ctk.CTkFont(size=18, weight="bold"),
+            text_color=COLORS['text_primary']
+        )
+        title.pack(pady=(20, 25))
+        
+        # Yedekle butonu
+        export_btn = ctk.CTkButton(
+            menu, text="📥 Verileri Yedekle (JSON)",
+            font=ctk.CTkFont(size=14, weight="bold"),
+            fg_color=COLORS['success'],
+            hover_color="#34d399",
+            height=45,
+            corner_radius=10,
+            command=lambda: self.export_backup(menu)
+        )
+        export_btn.pack(fill="x", padx=30, pady=(0, 10))
+        
+        # Geri yükle butonu
+        import_btn = ctk.CTkButton(
+            menu, text="📤 Yedekten Geri Yükle",
+            font=ctk.CTkFont(size=14, weight="bold"),
+            fg_color=COLORS['accent'],
+            hover_color="#ff8c5a",
+            height=45,
+            corner_radius=10,
+            command=lambda: self.import_backup(menu)
+        )
+        import_btn.pack(fill="x", padx=30)
+    
+    def export_backup(self, parent_window=None):
+        """Verileri JSON dosyasına yedekle"""
+        data = tum_verileri_yedekle()
+        
+        if not data:
+            messagebox.showwarning("Uyarı", "Yedeklenecek veri bulunamadı!")
+            return
+        
+        # Dosya kaydetme dialogu
+        from datetime import datetime
+        default_name = f"antkoli_yedek_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        
+        filepath = filedialog.asksaveasfilename(
+            defaultextension=".json",
+            filetypes=[("JSON Dosyası", "*.json")],
+            initialfile=default_name,
+            title="Yedeği Kaydet"
+        )
+        
+        if filepath:
+            try:
+                with open(filepath, 'w', encoding='utf-8') as f:
+                    json.dump(data, f, ensure_ascii=False, indent=2)
+                messagebox.showinfo("Başarılı", f"Veriler yedeklendi!\n\n{filepath}")
+                if parent_window:
+                    parent_window.destroy()
+            except Exception as e:
+                messagebox.showerror("Hata", f"Yedekleme hatası: {e}")
+    
+    def import_backup(self, parent_window=None):
+        """JSON dosyasından verileri geri yükle"""
+        filepath = filedialog.askopenfilename(
+            filetypes=[("JSON Dosyası", "*.json")],
+            title="Yedek Dosyasını Seç"
+        )
+        
+        if filepath:
+            # Onay al
+            if not messagebox.askyesno(
+                "Onay", 
+                "DİKKAT: Mevcut tüm veriler silinecek ve yedekteki verilerle değiştirilecek!\n\n"
+                "Devam etmek istiyor musunuz?"
+            ):
+                return
+            
+            try:
+                with open(filepath, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                
+                if verileri_geri_yukle(data):
+                    messagebox.showinfo("Başarılı", "Veriler başarıyla geri yüklendi!")
+                    self.update_stats()
+                    start_cache_refresh()
+                    if parent_window:
+                        parent_window.destroy()
+                else:
+                    messagebox.showerror("Hata", "Geri yükleme başarısız!")
+            except Exception as e:
+                messagebox.showerror("Hata", f"Dosya okuma hatası: {e}")
 
 
 if __name__ == "__main__":

@@ -28,7 +28,7 @@ def firebase_get(path):
             return response.json()
         return None
     except Exception as e:
-        print(f"❌ Firebase okuma hatası: {e}")
+        print(f"[HATA] Firebase okuma hatasi: {e}")
         return None
 
 
@@ -39,7 +39,7 @@ def firebase_set(path, data):
         response = requests.put(url, json=data, timeout=5)
         return response.status_code == 200
     except Exception as e:
-        print(f"❌ Firebase yazma hatası: {e}")
+        print(f"[HATA] Firebase yazma hatasi: {e}")
         return False
 
 
@@ -52,7 +52,7 @@ def firebase_push(path, data):
             return response.json().get('name')  # Benzersiz ID döner
         return None
     except Exception as e:
-        print(f"❌ Firebase ekleme hatası: {e}")
+        print(f"[HATA] Firebase ekleme hatasi: {e}")
         return None
 
 
@@ -63,7 +63,7 @@ def firebase_update(path, data):
         response = requests.patch(url, json=data, timeout=5)
         return response.status_code == 200
     except Exception as e:
-        print(f"❌ Firebase güncelleme hatası: {e}")
+        print(f"[HATA] Firebase guncelleme hatasi: {e}")
         return False
 
 
@@ -74,7 +74,7 @@ def firebase_delete(path):
         response = requests.delete(url, timeout=5)
         return response.status_code == 200
     except Exception as e:
-        print(f"❌ Firebase silme hatası: {e}")
+        print(f"[HATA] Firebase silme hatasi: {e}")
         return False
 
 
@@ -91,14 +91,14 @@ def test_connection():
 def init_db():
     """Veritabanını başlatır ve bağlantıyı test eder"""
     if "YOUR-PROJECT-ID" in FIREBASE_DATABASE_URL:
-        print("⚠️ Firebase URL ayarlanmamış! database.py dosyasını düzenleyin.")
+        print("[UYARI] Firebase URL ayarlanmamis! database.py dosyasini duzenleyin.")
         return False
     
     if not test_connection():
-        print("❌ Firebase'e bağlanılamadı! İnternet bağlantınızı ve URL'yi kontrol edin.")
+        print("[HATA] Firebase'e baglanilamadi! Internet baglantinizi ve URL'yi kontrol edin.")
         return False
     
-    print("✅ Firebase bağlantısı başarılı!")
+    print("[OK] Firebase baglantisi basarili!")
     
     # Ayarları kontrol et, yoksa oluştur
     ayarlar = firebase_get("ayarlar")
@@ -119,7 +119,7 @@ def init_db():
             "muhasebe": 0
         }
         firebase_set("ayarlar", varsayilan_ayarlar)
-        print("✅ Varsayılan ayarlar oluşturuldu.")
+        print("[OK] Varsayilan ayarlar olusturuldu.")
     
     return True
 
@@ -193,7 +193,7 @@ def satis_ekle(firma_adi, malzeme_gideri, toplam_satis_tutari, satis_suresi_gun,
     
     satis_id = firebase_push("satislar", yeni_satis)
     if satis_id:
-        print(f"✅ Satış eklendi: {satis_id}")
+        print(f"[OK] Satis eklendi: {satis_id}")
     return satis_id
 
 
@@ -218,7 +218,7 @@ def tum_satislari_getir():
 def satis_sil(satis_id):
     """Satış kaydını siler"""
     if firebase_delete(f"satislar/{satis_id}"):
-        print(f"✅ Satış silindi: {satis_id}")
+        print(f"[OK] Satis silindi: {satis_id}")
         return True
     return False
 
@@ -329,6 +329,30 @@ def firma_istatistikleri_getir(firma_adi):
         'ortalama_kar_yuzdesi': sum(s.get('kar_yuzdesi', 0) for s in firma_satislari) / len(firma_satislari),
         'satislar': firma_satislari
     }
+
+
+def tum_verileri_yedekle():
+    """Tüm Firebase verilerini JSON olarak döndürür (yedekleme için)"""
+    try:
+        url = f"{FIREBASE_DATABASE_URL}/.json"
+        response = requests.get(url, timeout=10)
+        if response.status_code == 200:
+            return response.json()
+        return None
+    except Exception as e:
+        print(f"[HATA] Yedekleme hatasi: {e}")
+        return None
+
+
+def verileri_geri_yukle(data):
+    """JSON verilerini Firebase'e geri yükler"""
+    try:
+        url = f"{FIREBASE_DATABASE_URL}/.json"
+        response = requests.put(url, json=data, timeout=10)
+        return response.status_code == 200
+    except Exception as e:
+        print(f"[HATA] Geri yukleme hatasi: {e}")
+        return False
 
 
 def ulke_firma_sayisi_getir():
