@@ -1,10 +1,10 @@
-# map_viewer.py - Satış Haritası Görüntüleyici
-import webbrowser
+# map_viewer.py - Satış Haritası Görüntüleyici (Uygulama İçi Pencere)
 import os
 import sys
 import http.server
 import socketserver
 import threading
+import webview  # pywebview
 
 def get_resource_path(relative_path):
     """PyInstaller ile paketlenmiş dosya yolunu al"""
@@ -19,11 +19,15 @@ def find_free_port():
         s.bind(('', 0))
         return s.getsockname()[1]
 
+class QuietHTTPHandler(http.server.SimpleHTTPRequestHandler):
+    """Sessiz HTTP handler - log basmaz"""
+    def log_message(self, format, *args):
+        pass  # Logları sustur
+
 def start_server(directory, port):
     """HTTP sunucusu başlat"""
     os.chdir(directory)
-    handler = http.server.SimpleHTTPRequestHandler
-    with socketserver.TCPServer(("", port), handler) as httpd:
+    with socketserver.TCPServer(("", port), QuietHTTPHandler) as httpd:
         httpd.serve_forever()
 
 def main():
@@ -36,8 +40,18 @@ def main():
     dashboard_path = os.path.join(base_dir, "web-dashboard", "Fintech World Map Dashboard", "dist")
     
     if not os.path.exists(dashboard_path):
-        print(f"Dashboard bulunamadı: {dashboard_path}")
-        input("Çıkmak için Enter'a basın...")
+        print(f"Dashboard bulunamadi: {dashboard_path}")
+        # Fallback: Basit bir hata penceresi göster
+        try:
+            webview.create_window(
+                "Hata",
+                html="<html><body style='font-family:Arial;text-align:center;padding:50px;'><h2>Harita dosyaları bulunamadı!</h2><p>web-dashboard klasörünü kontrol edin.</p></body></html>",
+                width=400,
+                height=200
+            )
+            webview.start()
+        except:
+            pass
         return
     
     # Sunucuyu başlat
@@ -45,14 +59,22 @@ def main():
     server_thread = threading.Thread(target=start_server, args=(dashboard_path, port), daemon=True)
     server_thread.start()
     
-    # Tarayıcıda aç
+    # Uygulama içi pencerede aç (pywebview)
     url = f"http://localhost:{port}/index.html"
-    print(f"Harita açılıyor: {url}")
-    webbrowser.open(url)
+    print(f"Harita aciliyor: {url}")
     
-    # Bekle
-    input("Haritayı kapatmak için Enter'a basın...")
+    # Pencere oluştur
+    window = webview.create_window(
+        "🌍 Dünya Satış Haritası - Ant Koli",
+        url,
+        width=1200,
+        height=800,
+        resizable=True,
+        min_size=(800, 600)
+    )
+    
+    # Pencereyi başlat
+    webview.start()
 
 if __name__ == "__main__":
     main()
-
